@@ -3,10 +3,12 @@
         <!-- development version, includes helpful console warnings -->
         <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
         <script src="lib/hark.bundle.js"></script>
+
+        
     </head>
 
     <body>
-        <div id="app">
+       <!--  <div id="app">
             {{ message }}
 
             <span v-bind:title="message">
@@ -23,36 +25,88 @@
             <input v-model="message">
             <input v-model="message">
             <ol>
-              <!-- Create an instance of the todo-item component -->
+              
               <todo-item></todo-item>
             </ol>
-        </div>
+        </div> -->
+
+
         <br>
         <button id="test">Click me</button>
+
+        <canvas class="visualizer"></canvas>
         
         
     </body>
 
+    <script src="renderer.js"></script>
     <script type="text/javascript">
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
 
-        //var hark = require('../hark.js')
-
-        //var getUserMedia = require('getusermedia')
+        var waveform = window.Waveform();
 
         navigator.getUserMedia = navigator.getUserMedia ||
                          navigator.webkitGetUserMedia ||
                          navigator.mozGetUserMedia;
 
         document.querySelector('#test').addEventListener('click', function() {
+
+            audioContext = new AudioContext();
+
             navigator.getUserMedia({ audio: true},
-                function(stream) {
+                function(audio_stream) {
+
+                var source = audioContext.createMediaStreamSource(audio_stream)
+                var node = source.context.createScriptProcessor(4096, 1, 1);
+
+                var analyser = source.context.createAnalyser();
+                analyser.minDecibels = -90;
+                analyser.maxDecibels = -10;
+                analyser.smoothingTimeConstant = 0.85;
+
+                source.connect(analyser);
+                analyser.connect(node);
+                node.connect(source.context.destination);
+
+                node.onaudioprocess = function (audioProcessingEvent) {                  
+                  analyse();
+                };
+
+                var visualizationCallback = function(dataArray, bufferLength){
+                    //console.log("visualizationCallback")
+                    waveform.visualizeAudioBuffer(dataArray, bufferLength)
+                }
+
+                var analyse = function () {
+                  analyser.fftSize = 2048;
+                  var bufferLength = analyser.fftSize;
+                  var dataArray = new Uint8Array(bufferLength);
+                  var amplitude = 0.2;
+                  var time = 1500;
+
+                  analyser.getByteTimeDomainData(dataArray);
+
+                  if (typeof visualizationCallback === 'function') {
+                    visualizationCallback(dataArray, bufferLength);
+                  }
+
+                  for (var i = 0; i < bufferLength; i++) {
+                    // Normalize between -1 and 1.
+                    var curr_value_time = (dataArray[i] / 128) - 1.0;
+                    if (curr_value_time > amplitude || curr_value_time < (-1 * amplitude)) {
+                      start = Date.now();
+                    }
+                  }
+                  
+                };
                 
 
                 var options = {};
-                var speechEvents = hark(stream, options);
+                var speechEvents = hark(audio_stream, options);
 
                 speechEvents.on('speaking', function() {
                   console.log('speaking');
+                  waveform.prepCanvas()
                 });
 
                 speechEvents.on('stopped_speaking', function() {
@@ -64,6 +118,8 @@
               });
 
          });
+
+       
 
 
         // Vue.component('todo-item', {
