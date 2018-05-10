@@ -1,0 +1,93 @@
+<html>
+    <head>
+        <!-- development version, includes helpful console warnings -->
+        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+        <script src="hark.bundle.js"></script>
+    </head>
+
+    <body>
+        <div id="app">
+            {{ message }}
+
+            <span v-bind:title="message">
+                Hover your mouse over me for a few seconds
+                to see my dynamically bound title!
+            </span>
+            <span v-if="seen">Now you see me</span>
+            <ol>
+                <li v-for="todo in todos">
+                  {{ todo.text }}
+                </li>
+            </ol>
+            <button v-on:click="reverseMessage">Reverse Message</button>
+            <input v-model="message">
+            <input v-model="message">
+            <ol>
+              <!-- Create an instance of the todo-item component -->
+              <todo-item></todo-item>
+            </ol>
+        </div>
+        <br>
+        <button id="test">Click me</button>
+        
+        
+    </body>
+
+    <script type="text/javascript">
+
+        //var hark = require('../hark.js')
+
+        //var getUserMedia = require('getusermedia')
+
+        navigator.getUserMedia = navigator.getUserMedia ||
+                         navigator.webkitGetUserMedia ||
+                         navigator.mozGetUserMedia;
+
+        document.querySelector('#test').addEventListener('click', function() {
+            navigator.getUserMedia({ audio: true},
+                function(stream) {
+                
+
+                var options = {};
+                var speechEvents = hark(stream, options);
+
+                speechEvents.on('speaking', function() {
+                  console.log('speaking');
+                });
+
+                speechEvents.on('stopped_speaking', function() {
+                  console.log('stopped_speaking');
+                });
+            },
+              function(err) {
+                 console.log("The following error occurred: " + err.name);
+              });
+
+         });
+
+
+        // Vue.component('todo-item', {
+        //   template: '<li>This is a todo</li>'
+        // })
+
+        // var app = new Vue({
+        //     el: '#app',
+        //     data: {
+        //         message: 'Hello Vue!',
+        //         seen: false,
+        //         todos: [
+        //           { text: 'Learn JavaScript' },
+        //           { text: 'Learn Vue' },
+        //           { text: 'Build something awesome' }
+        //         ]
+        //     },
+        //     methods: {
+        //         reverseMessage: function () {
+        //           this.message = this.message.split('').reverse().join('')
+        //         }
+        //     }
+        // })
+
+        
+    </script>
+</html>
