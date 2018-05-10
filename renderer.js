@@ -32,6 +32,8 @@
     var visualizeAudioBuffer = function(dataArray, bufferLength) {
       var WIDTH = canvas.width;
       var HEIGHT = canvas.height;
+
+
       var animationId;
       canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
 
@@ -43,9 +45,9 @@
           return;
         }
 
-        canvasCtx.fillStyle = 'rgb(249,250,252)';
+        canvasCtx.fillStyle = 'rgb(249,250,252, 0)';
         canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
-        canvasCtx.lineWidth = 1;
+        canvasCtx.lineWidth = 2;
         canvasCtx.strokeStyle = 'rgb(0,125,188)';
         canvasCtx.beginPath();
 

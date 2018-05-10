@@ -1,8 +1,10 @@
 <html>
     <head>
+
         <!-- development version, includes helpful console warnings -->
         <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
         <script src="lib/hark.bundle.js"></script>
+        <script src="lib/recorder.js"></script>
 
         
     </head>
@@ -32,10 +34,11 @@
 
 
         <br>
-        <button id="test">Click me</button>
-
-        <canvas class="visualizer"></canvas>
         
+
+        <canvas class="visualizer" width="1024" height="768" style="pointer-events: none; position: absolute; width: 100%; height: 100%; left: 0; top: 0;"></canvas>
+        <button id="test">Click me</button>
+        <div id="download_area"></div>
         
     </body>
 
@@ -57,15 +60,23 @@
                 function(audio_stream) {
 
                 var source = audioContext.createMediaStreamSource(audio_stream)
-                var node = source.context.createScriptProcessor(4096, 1, 1);
+
+
+
+                var node = source.context.createScriptProcessor(1024, 1, 1);
+
+                var rec = new Recorder(source, {
+                    numChannels: 1,
+                    targetSampleRate: 16000
+                })
 
                 var analyser = source.context.createAnalyser();
                 analyser.minDecibels = -90;
                 analyser.maxDecibels = -10;
-                analyser.smoothingTimeConstant = 0.85;
+                analyser.smoothingTimeConstant = 0.5;
 
                 source.connect(analyser);
-                analyser.connect(node);
+                analyser.connect(node);                
                 node.connect(source.context.destination);
 
                 node.onaudioprocess = function (audioProcessingEvent) {                  
@@ -73,16 +84,15 @@
                 };
 
                 var visualizationCallback = function(dataArray, bufferLength){
-                    //console.log("visualizationCallback")
+                    //console.log("visualizationCallback "+dataArray.length+" "+bufferLength)
                     waveform.visualizeAudioBuffer(dataArray, bufferLength)
                 }
 
                 var analyse = function () {
-                  analyser.fftSize = 2048;
+                  analyser.fftSize = 4096;
                   var bufferLength = analyser.fftSize;
                   var dataArray = new Uint8Array(bufferLength);
-                  var amplitude = 0.2;
-                  var time = 1500;
+                  
 
                   analyser.getByteTimeDomainData(dataArray);
 
@@ -90,13 +100,6 @@
                     visualizationCallback(dataArray, bufferLength);
                   }
 
-                  for (var i = 0; i < bufferLength; i++) {
-                    // Normalize between -1 and 1.
-                    var curr_value_time = (dataArray[i] / 128) - 1.0;
-                    if (curr_value_time > amplitude || curr_value_time < (-1 * amplitude)) {
-                      start = Date.now();
-                    }
-                  }
                   
                 };
                 
@@ -107,10 +110,28 @@
                 speechEvents.on('speaking', function() {
                   console.log('speaking');
                   waveform.prepCanvas()
+
+                  rec.record()
                 });
 
                 speechEvents.on('stopped_speaking', function() {
                   console.log('stopped_speaking');
+                  rec.stop()
+                  console.log("exportWAV")
+                  rec.exportWAV(function(blob){
+                    console.log("exportWAV callback")
+                    var url = (window.URL || window.webkitURL).createObjectURL(blob);
+                    var link = window.document.createElement('a');
+                    link.href = url;
+                    link.innerHTML = "download"
+                    link.download = 'output.wav';
+                    console.log(url)
+                    document.querySelector("#download_area").appendChild(link)
+
+                    //Recorder.forceDownload(blob)
+                  })
+
+                  rec.clear()
                 });
             },
               function(err) {
